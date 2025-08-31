@@ -1,50 +1,11 @@
-# ChefSue Backend
+# ChefSue Backend - RAG Pipeline Design
 
-> Intelligent cooking assistant with RAG pipeline, combining AI interpretation with MealDB API integration
-
-## Quick Start
-
-1. **Clone and Install**
-   ```bash
-   git clone https://github.com/maxxcyang/ChefSue-Backend.git
-   cd ChefSue-Backend
-   npm install
-   ```
-
-2. **Configure Environment**
-   ```bash
-   # Edit .env with your AWS Bedrock credentials
-   AWS_ACCESS_KEY_ID=your_access_key_here
-   AWS_SECRET_ACCESS_KEY=your_secret_access_key_here
-   AWS_REGION=us-east-1
-   BEDROCK_MODEL_ID=mistral.mistral-7b-instruct-v0:2
-   ```
-
-3. **Run Development Server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Test the API**
-   ```bash
-   curl -X POST http://localhost:3000/api/chat \
-     -H "Content-Type: application/json" \
-     -d '{"message": "Show me healthy chicken recipes"}'
-   ```
-
-## What It Does
-
-ChefSue Backend is an Express.js server that implements a **Retrieval-Augmented Generation (RAG) pipeline** for intelligent cooking assistance. It combines AI interpretation with MealDB API calls to provide contextual, conversation-aware recipe recommendations.
-
-### Key Features
-
-- **Two-Phase AI Pipeline**: Intent analysis → Recipe selection → Response synthesis
-- **MealDB Integration**: Access to thousands of recipes with smart filtering
-- **Conversational Memory**: Maintains context across chat sessions
-- **Input Validation**: Comprehensive security and error handling
-- **Smart Caching**: Optimized API calls with fallback strategies
+## Overview
+ChefSue Backend is an Express.js server that implements a Retrieval-Augmented Generation (RAG) pipeline combining AI interpretation with MealDB API calls to provide intelligent cooking assistance.
 
 ## Architecture
+
+### Core Components
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
@@ -67,29 +28,61 @@ ChefSue Backend is an Express.js server that implements a **Retrieval-Augmented 
                                    └─────────────┘ └─────────────┘
 ```
 
-## How It Works
+## Data Flow
 
-### Phase 1: Intent Analysis
-```
-User: "I want healthy chicken recipes"
-↓
-AI: {"api_calls": [{"endpoint": "filter.php", "params": {"i": "chicken"}}]}
-```
+### Two-Phase AI Pipeline
 
-### Phase 2: Recipe Selection (Conditional)
+#### Phase 1: Intent Analysis & API Planning
 ```
-Filter Results: [30 chicken recipes]
-↓
-AI selects: 3 most relevant for "healthy"
-↓ 
-API Calls: [lookup.php?i=52940, lookup.php?i=52941, lookup.php?i=52942]
+User Input → AI Analysis → Structured API Calls
 ```
 
-### Phase 3: Response Synthesis
+**Input Example:**
 ```
-Full Recipe Data + User Intent + Conversation History
-↓
-AI: "Here are 3 healthy chicken recipes perfect for you..."
+"I want healthy chicken recipes"
+```
+
+**AI Output:**
+```json
+{
+  "api_calls": [
+    {
+      "endpoint": "filter.php",
+      "params": {"i": "chicken"}
+    }
+  ]
+}
+```
+
+#### Phase 2: Recipe Selection & Detail Fetching (Conditional)
+```
+Filter Results → AI Selection → Detail API Calls → Final Synthesis
+```
+
+**Only executed if filter returns results. Skipped if:**
+- No results from filter
+- Direct recipe search was performed
+- API call returned empty
+
+**After filter returns 30 chicken meals:**
+- AI analyzes meal names/thumbnails
+- Selects relevant meals based on "healthy" criteria
+- Generates lookup calls for selected meals
+
+**AI Output:**
+```json
+{
+  "api_calls": [
+    {"endpoint": "lookup.php", "params": {"i": "52940"}},
+    {"endpoint": "lookup.php", "params": {"i": "52941"}},
+    {"endpoint": "lookup.php", "params": {"i": "52942"}}
+  ]
+}
+```
+
+#### Final Synthesis
+```
+Full Recipe Data → AI Synthesis → User Response
 ```
 
 ## API Endpoints
